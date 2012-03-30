@@ -1,4 +1,7 @@
-global char const *font_source =\
+import main
+global LandFont *font
+
+static char const *font_source =\
 ***scramble
 for row in """
 ................................................................................
@@ -196,3 +199,30 @@ for row in """
 """[1:].splitlines():
     parse('"' + row.rstrip().replace("\\", "\\\\") + '"')
 ***
+
+global char font_glyphs[128][16 * 10]
+
+def font_create():
+    macro set(r, g, b, a):
+        rgba[320 * y + x * 4 + 0] = r
+        rgba[320 * y + x * 4 + 1] = g
+        rgba[320 * y + x * 4 + 2] = b
+        rgba[320 * y + x * 4 + 3] = a
+
+    unsigned char rgba[80 * 192 * 4]
+    for int y in range(192):
+        for int x in range(80):
+            int i = 32 + x / 10 + 8 * (y / 16)
+            if (x % 10) == 0 or (x % 10) == 9 or\
+                (y % 16) == 0 or (y % 16) == 15:
+                set(0, 0, 0, 255)                
+            elif font_source[y * 80 + x] == '#':
+                font_glyphs[i][(y % 16) * 10 + x % 10] = '*'
+                set(255, 255, 255, 255)
+            elif font_source[y * 80 + x] == '.':
+                set(0, 0, 0, 0)
+
+    LandImage *image = land_image_new(80, 192)
+    land_image_set_rgba_data(image, rgba)
+    font = land_font_from_image(image, 1, (int []){32, 127});
+    land_image_destroy(image)

@@ -1,20 +1,30 @@
 import main
-static import game
+static import game, controls
 
 class Player:
     int x, y, d
-    
+
+# Directions:
+#     0
+#     N
+# 3 W   E 1
+#     S 
+#     2
 static int const ddx[] = {0, 1, 0, -1}
 static int const ddy[] = {-1, 0, 1, 0}
 
-char def player_get_map(Player *self, int offset, distance):
+char def player_get_map_xy(Player *self, int dx, dy):
+    int x = self->x + dx
+    int y = self->y + dy
+    return the_game->dungeon[y * 80 + x]
+
+char def player_get_map_forward(Player *self, int offset, distance):
     int dx = ddx[self->d]
     int dy = ddy[self->d]
     int rx = -dy
     int ry = dx
-    int x = self->x + dx * distance + rx * offset
-    int y = self->y + dy * distance + ry * offset
-    return the_game->dungeon[y * 80 + x]
+    return player_get_map_xy(self, dx * distance + rx * offset,
+        dy * distance + ry * offset)
 
 Player *def player_new():
     Player *self; land_alloc(self)
@@ -30,22 +40,60 @@ Player *def player_new():
 
 def player_input(Player *self, int bits):
     int turn = -1
+    int move_x = 0, move_y = 0
 
-    if bits == 1: turn = 0
-    if bits == 2: turn = 1
-    if bits == 4: turn = 2
-    if bits == 8: turn = 3
+    int dx = ddx[self->d]
+    int dy = ddy[self->d]
+
+    if bits & (1 << TurnMoveNorth): turn = 0
+    if bits & (1 << TurnMoveEast): turn = 1
+    if bits & (1 << TurnMoveSouth): turn = 2
+    if bits & (1 << TurnMoveWest): turn = 3
     
-    if turn == -1: return
+    if turn != -1:
+
+        if turn == self->d:
+            move_x = dx
+            move_y = dy
+            turn = -1
+        else:
+            self->d = turn
+            dx = ddx[self->d]
+            dy = ddy[self->d]
     
-    if turn != self->d:
-        self->d = turn
-    else:
-        char c = player_get_map(self, 0, 1)
+    int rx = -dy
+    int ry = dx
+    
+    if move_x == 0 and move_y == 0 and turn == -1:
+        if bits & (1 << MoveForward):
+            move_x += dx
+            move_y += dy
+        if bits & (1 << MoveBackward):
+            move_x -= dx
+            move_y -= dy
+            
+        int m = bits & (1 << StrafeModifier)
+        int ml = bits & (1 << MoveLeft)
+        int mr = bits & (1 << MoveRight)
+        int tl = bits & (1 << TurnLeft)
+        int tr = bits & (1 << TurnRight)
+            
+        if (mr and not m) or (tr and m):
+            move_x += rx
+            move_y += ry
+        if (ml and not m) or (tl and m):
+            move_x -= rx
+            move_y -= ry
+        if (tl and not m) or (ml and m):
+            self->d--
+            if self->d < 0: self->d += 4
+        if (tr and not m) or (mr and m):
+            self->d++
+            if self->d >= 4: self->d -= 4
+
+    if move_x or move_y:
+        char c = player_get_map_xy(self, move_x, move_y)
         if c == ' ':
-            int dx = ddx[self->d]
-            int dy = ddy[self->d]
-            self->x += dx
-            self->y += dy
+            self->x += move_x
+            self->y += move_y
 
-        
