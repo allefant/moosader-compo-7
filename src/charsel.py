@@ -1,10 +1,10 @@
 import main
-static import menu, title, characters, render, font
+static import menu, title, characters, render, font, area
 
 static int charsel_portrait[5]
 static int part_sel
 static char const *part_names[] = {"face ", "eyes ", "hair ", "nose ", "mouth "}
-static char name[20] = "Indy D. V. Loper"
+static char char_name[20] = "Indy D. V. Loper"
 static int profession
 static int cursor_pos
 static int alignment
@@ -46,17 +46,17 @@ static char const *titles[] = {
     "Special Agent ",
     }
 
-static char const *alignments[] = {
-    "Lawful Good",
-    "Neutral Good",
-    "Chaotic Good", 
-    "Lawful Neutral",
-    "True Neutral",
-    "Chaotic Neutral", 
-    "Lawful Evil",
-    "Neutral Evil",
-    "Chaotic Evil",
-    }
+#static char const *alignments[] = {
+#    "Lawful Good",
+#    "Neutral Good",
+#    "Chaotic Good", 
+#    "Lawful Neutral",
+#    "True Neutral",
+#    "Chaotic Neutral", 
+#    "Lawful Evil",
+#    "Neutral Evil",
+#    "Chaotic Evil",
+#    }
 
 static def select_next(int part, d):
     int sel = charsel_portrait[part]
@@ -90,6 +90,18 @@ static def com_select(Menu *menu, char const *command):
 
     select_next(part_sel, d)
 
+static char const *def get_help(char const *name):
+    if strcmp(name, "Name") == 0: return "Type a new name."
+    if strcmp(name, "Face") == 0: return "Change the face shape."
+    if strcmp(name, "Eyes") == 0: return "Change the eye shape."
+    if strcmp(name, "Hair") == 0: return "Change the hair style."
+    if strcmp(name, "Nose") == 0: return "Change the nose shape."
+    if strcmp(name, "Mouth") == 0: return "Change the mouth shape."
+    if strcmp(name, "Job") == 0: return "Change the job."
+    if strcmp(name, "Align") == 0: return "Change the alignment."
+    if strcmp(name, "Done") == 0: return "Embark on your mission!"
+    return ""
+
 static def com_name(Menu *menu, char const *command):
     """
     
@@ -99,8 +111,9 @@ static def com_name(Menu *menu, char const *command):
     """
     int k, u;
     if not land_keybuffer_empty():
-        int s = sizeof(name) - 2
-
+        char *name = char_name
+        int s = sizeof(char_name) - 2
+        
         land_keybuffer_next(&k, &u);
         
         if k == LandKeyLeft:
@@ -143,6 +156,10 @@ static def com_change(Menu *menu, char const *command):
         alignment += 9 + d
         alignment %= 9
 
+static def com_start(Menu *menu, char const *command):
+    if land_key_pressed(LandKeyEnter):
+        area_enter()
+
 def charsel_enter():
     state = "charsel"
     
@@ -159,7 +176,8 @@ def charsel_enter():
     menu_add("Nose", com_select)
     menu_add("Mouth", com_select)
     menu_add("Job", com_change)
-    menu_add("Align", com_change)
+    #menu_add("Align", com_change)
+    menu_add("Done", com_start)
 
 def charsel_tick():
     if land_key_pressed(LandKeyEscape):
@@ -187,17 +205,24 @@ def charsel_render():
                 if p == 0 or c != ' ':
                     if c == 'e': c = ' '
                     screen[px + i + (py + j) * 80] = c
+
     #memcpy(screen + 1 + 14 * 80, portraits[charsel_portrait[part_sel]] + 12 * 20, 20)
+    text(1, 24, get_help(menu_get_focus()))
 
     px = x + 1
-    py = bottom - 1
-    text(px, py, "%s%s", titles[profession], name)
+    py = bottom - 2
+    text(px, py - 1, "%s", titles[profession])
+    text(px, py, "%s", char_name)
+    text(px, py + 1, "%s", jobs[profession])
+    
     if strcmp(menu_get_focus(), "Name") == 0:
         if land_get_ticks() % 60 < 30:
-            screen[py * 80 + px + strlen(titles[profession]) + cursor_pos] = '_'
+            screen[py * 80 + px + cursor_pos] = '_'
 
-    text(right - strlen(jobs[profession]), bottom - 1, jobs[profession])
-    char const *s = "Pentagon"
+    char const *s = "Washington, D.C."
+    text(right - strlen(s), bottom - 1, s)
+
+    s = "Pentagon"
     text(right - strlen(s), y + 1, s)
 
     px = x + 21
@@ -207,14 +232,27 @@ def charsel_render():
         blit(screen, 80, px + i * 8, py,
             font_glyphs[(int)s2[i]], 10, 1, 1, 7, 13)
 
-    px = right + 2
-    py = 1
-    for int aj in range(3):
-        int px2 = px
-        for int ai in range(3):            
-            if aj * 3 + ai == alignment:
-                text(px2, py + aj * 3, alignments[alignment])
-            else:
-                text(px2, py + aj * 3, "[]")
-            px2 += 3
-            if ai == alignment % 3: px2 += 12
+    #px = right + 2
+    #py = 1
+    #for int aj in range(3):
+    #    int px2 = px
+    #    for int ai in range(3):            
+    #        if aj * 3 + ai == alignment:
+    #            text(px2, py + aj * 3, alignments[alignment])
+    #        else:
+    #            text(px2, py + aj * 3, "[]")
+    #        px2 += 3
+    #        if ai == alignment % 3: px2 += 12
+
+    #int py2 = py + 9
+    #if alignment < 3:
+    #    text(px, py2++, "- may only kill evil")
+    
+    #if alignment % 3 == 0:
+    #    text(px, py2++, "- cannot commit crimes")
+    
+    #if alignment % 3 == 2:
+    #    text(px, py2++, "- can join the cult")
+
+char const *def charsel_name():
+    return char_name

@@ -1,8 +1,14 @@
 import main
-static import game, controls
+static import game, controls, charsel
 
 class Player:
+    int id
     int x, y, d
+    int hp, ammo, xp
+    int level
+    char name[20]
+    
+    Player *next_in_party
 
 # Directions:
 #     0
@@ -13,28 +19,40 @@ class Player:
 static int const ddx[] = {0, 1, 0, -1}
 static int const ddy[] = {-1, 0, 1, 0}
 
-char def player_get_map_xy(Player *self, int dx, dy):
-    int x = self->x + dx
-    int y = self->y + dy
+char def player_get_map_xy(Player *self, int x, y):
     return the_game->dungeon[y * 80 + x]
 
-char def player_get_map_forward(Player *self, int offset, distance):
+char def player_get_monster_xy(Player *self, int x, y):
+    return the_game->monstermap[y * 80 + x]
+
+def player_get_map_forward_pos(Player *self, int offset, distance,
+        int *x, *y):
     int dx = ddx[self->d]
     int dy = ddy[self->d]
     int rx = -dy
     int ry = dx
-    return player_get_map_xy(self, dx * distance + rx * offset,
-        dy * distance + ry * offset)
+    *x = self->x + dx * distance + rx * offset
+    *y = self->y + dy * distance + ry * offset
+    return
 
-Player *def player_new():
+char def player_get_map_forward(Player *self, int offset, distance):
+    int x, y
+    player_get_map_forward_pos(self, offset, distance, &x, &y)
+    return player_get_map_xy(self, x, y)
+
+char def player_get_monster_forward(Player *self, int offset, distance):
+    int x, y
+    player_get_map_forward_pos(self, offset, distance, &x, &y)
+    return player_get_monster_xy(self, x, y)
+
+Player *def player_new(int id, x, y, char const *name):
     Player *self; land_alloc(self)
     
-    for int y in range(25):
-        for int x in range(80):
-            if the_game->dungeon[y * 80 + x] == 'S':
-                the_game->dungeon[y * 80 + x] = ' '
-                self->x = x
-                self->y = y
+    memcpy(self->name, name, 20)
+
+    self->id = id
+    self->x = x
+    self->y = y
     
     return self
 
@@ -92,7 +110,7 @@ def player_input(Player *self, int bits):
             if self->d >= 4: self->d -= 4
 
     if move_x or move_y:
-        char c = player_get_map_xy(self, move_x, move_y)
+        char c = player_get_map_xy(self, self->x + move_x, self->y + move_y)
         if c == ' ':
             self->x += move_x
             self->y += move_y

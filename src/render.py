@@ -1,5 +1,5 @@
 import main
-static import walls, map, title, monsters
+static import walls, map, title, monsters, story
 
 def rectfill(int x1, y1, x2, y2, char c):
     for int y = y1 while y <= y2 with y++:
@@ -73,18 +73,21 @@ static def blit_masked(char * to_addr, int to_w, tx, ty,
             if c == 'e': c = ' '
             to_addr[tx + i + (ty + j) * to_w] = c
 
-def draw_wall(int x, y, int offset, distance, side):
-    char c = player_get_map_forward(the_game->player, offset, 1 + distance)
+def draw_wall_or_monster(char c, int x, y, int offset, distance, side):
     char const *wall = None
     bool monster = False
     #bool mirror = False
     
     if c == '#': wall = wall0   
-    if c == '+': wall = wall1
-    if c == 'M': wall = monster0; monster = True
-    if c == 'A': wall = monster1; monster = True
-
-    if not wall: return
+    elif c == '=': wall = wall1
+    elif c == '^': wall = wall2
+    elif c == 'v': wall = wall3
+    elif c == '+': wall = wall4; monster = True
+    elif c == 'H': wall = monster0; monster = True
+    elif c == 'D': wall = monster2; monster = True
+    elif c == 'A': wall = monster1; monster = True
+    elif c == 'Z': wall = monster3; monster = True
+    else: return
 
     int ox, oy, w, h, d
     int values[4][5] = {
@@ -120,6 +123,15 @@ def draw_wall(int x, y, int offset, distance, side):
         if monster: pass
         elif mirror: blit_mirror_masked(screen, 80, x, y, wall, 80, ox + w + 9, oy, 3, h)
         else: blit_masked(screen, 80, x, y, wall, 80, ox + w + 9, oy, 3, h)
+
+def draw_wall(int x, y, int offset, distance, side):
+    Player *player = the_game->monsters[the_game->player_id]
+
+    char cw = player_get_map_forward(player, offset, 1 + distance)
+    if cw: draw_wall_or_monster(cw, x, y, offset, distance, side)
+    
+    char cm = player_get_monster_forward(player, offset, 1 + distance)
+    if cm: draw_wall_or_monster(cm, x, y, offset, distance, side)
 
 def draw_walls(int wx, wy):
     # distance 3 front
@@ -165,6 +177,8 @@ def draw_walls(int wx, wy):
     draw_wall(wx + 0, wy + 0, 0, 0, 0)
 
 def game_render():
+    Player *player = the_game->monsters[the_game->player_id]
+
     int wx = 40 - 13, wy = 0
 
     rectfill(40 - 13, 0, 40 + 12, 24, ' ')
@@ -218,11 +232,13 @@ def game_render():
     screen[80 * 6 + 69] = '@'
     
     rect(0, 0, 26, 24)
-    for int i in range(5):
+    for int i in range(1):
         hline(1, i * 5, 25)
-        text(1, i * 5, "Party Member")
+        text(1, i * 5, player->name)
     
     rect(59, 12, 79, 24)
     text(60, 12, "Inventory")
     
     rect(53, 0, 58, 24)
+    
+    #story_render(story)

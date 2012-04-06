@@ -12,15 +12,13 @@
 #
 # - Dialog messages with animated portrait (eyes, mouth)
 #
-# - Character creation screen. Alignment.
-#
 # - XFiles style date and location.
 #
 # - hippy elephants are quite intelligent
 
 import global land.land
 static import walls, dungeon, font, map, characters, render
-static import menu, title, controls, charsel
+static import menu, title, controls, charsel, area, sound
 import game
 
 char background_color[80 * 25]
@@ -37,7 +35,7 @@ def init():
     controls_init()
 
     game_new()
-    
+
     menu_init()
     title_enter()
 
@@ -50,17 +48,21 @@ def tick():
         title_tick()
     elif strcmp(state, "charsel") == 0:
         charsel_tick()
+    elif strcmp(state, "area") == 0:
+        area_tick()
     
     menu_tick()
 
 def draw():
     
     if strcmp(state, "title") == 0:
-        title_render()
+        title_render(2)
     elif strcmp(state, "game") == 0:
         game_render()
     elif strcmp(state, "charsel") == 0:
         charsel_render()
+    elif strcmp(state, "area") == 0:
+        area_render()
     menu_render()
     
     land_clear(0, 0, 0, 1)
