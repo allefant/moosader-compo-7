@@ -1,5 +1,5 @@
 import main
-static import walls, map, title, monsters, story
+static import walls, map, title, monsters, story, item
 
 def rectfill(int x1, y1, x2, y2, char c):
     for int y = y1 while y <= y2 with y++:
@@ -87,6 +87,7 @@ def draw_wall_or_monster(char c, int x, y, int offset, distance, side):
     elif c == 'D': wall = monster2; monster = True
     elif c == 'A': wall = monster1; monster = True
     elif c == 'Z': wall = monster3; monster = True
+    elif c == 'o': wall = wall5; monster = True
     else: return
 
     int ox, oy, w, h, d
@@ -130,8 +131,10 @@ def draw_wall(int x, y, int offset, distance, side):
     char cw = player_get_map_forward(player, offset, 1 + distance)
     if cw: draw_wall_or_monster(cw, x, y, offset, distance, side)
     
-    char cm = player_get_monster_forward(player, offset, 1 + distance)
-    if cm: draw_wall_or_monster(cm, x, y, offset, distance, side)
+    int m = player_get_monster_forward(player, offset, 1 + distance)
+    if m:
+        char cm = the_game->monsters[m]->letter
+        draw_wall_or_monster(cm, x, y, offset, distance, side)
 
 def draw_walls(int wx, wy):
     # distance 3 front
@@ -229,15 +232,32 @@ def game_render():
     
     rectfill(60, 1, 60 + 18, 1 + 10, 127)
     map_draw(60, 1, 19, 11)
-    screen[80 * 6 + 69] = '@'
     
     rect(0, 0, 26, 24)
     for int i in range(1):
         hline(1, i * 5, 25)
         text(1, i * 5, player->name)
+        text(1, i * 5 + 1, "                     L %2d", player->level)
+        text(1, i * 5 + 2, "HP %3d/%3d Ammo %3d/%3d", player->hp,
+            player->max_hp, player->ammo, player->max_ammo)
+        text(1, i * 5 + 3, "XP %3d", player->xp)
     
     rect(59, 12, 79, 24)
-    text(60, 12, "Inventory")
+    
+    if player->focus:
+        Player *focus = the_game->monsters[player->focus]
+        text(60, 12, "%s", focus->name)
+        text(60, 13, "HP %3d/%3d     L %2d", focus->hp, focus->max_hp,
+            focus->level)
+    else:
+        text(60, 12, "Inventory")
+        for int i in range(11):
+            int iid = player->inventory[i]
+            if iid:                
+                text(61, 13 + i, "%s (%d)", items[iid].name,
+                    player->amount[i])
+            else:
+                text(61, 13 + i, "-")
     
     rect(53, 0, 58, 24)
     

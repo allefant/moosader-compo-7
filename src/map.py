@@ -13,6 +13,8 @@ def map_draw(int wx, wy, w, h):
             int x = lx + i            
             if x < 0: continue
             if x >= 80: continue
-            char c = the_game->monstermap[x + y * 80]
-            if not c: c = the_game->dungeon[x + y * 80]
+            int id = the_game->monstermap[x + y * 80]
+            char c
+            if id: c = the_game->monsters[id]->letter
+            else: c = the_game->dungeon[x + y * 80]
             screen[wx + i + (wy + j) * 80] = c

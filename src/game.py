@@ -1,12 +1,12 @@
 import main
 import player
-static import dungeon, menu, controls, title, charsel
+static import dungeon, menu, controls, title, charsel, item, music
 
 class Game:
     int player_id
     Player *monsters[256]
     char dungeon[80 * 25]
-    char monstermap[80 * 25]
+    int monstermap[80 * 25]
 
 def scan_starting_positions():
     int n = 1
@@ -22,9 +22,10 @@ def scan_starting_positions():
                 name = "Zombie"
             
             if name:
-                the_game->monstermap[y * 80 + x] = the_game->dungeon[y * 80 + x]
+                char c = the_game->dungeon[y * 80 + x]
                 the_game->dungeon[y * 80 + x] = ' '
-                Player *m = player_new(n, x, y, name)
+                the_game->monstermap[y * 80 + x] = n
+                Player *m = player_new(n, x, y, c, name)
                 the_game->monsters[n++] = m
 
 Game *def game_new():
@@ -32,11 +33,16 @@ Game *def game_new():
     the_game = self
     memcpy(self->dungeon, dungeon1, 80 * 25)
     
+    items_init()
+    
     scan_starting_positions()
     
     return self
 
 def game_enter():
+    
+    music_play_tune(music_tune2)
+    
     menu_root()
     state = "game"
 

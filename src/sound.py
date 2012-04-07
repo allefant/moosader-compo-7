@@ -32,7 +32,7 @@ static float def envelope(Envelope *e, float x):
                 
     return v
 
-static uint16_t def float_to_signed_16(float s):
+static int16_t def float_to_signed_16(float s):
     int c = (s + 1) * 32767.5 - 32768
     if c < -32768: c = -32768
     elif c > 32767: c = 32767

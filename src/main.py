@@ -18,7 +18,7 @@
 
 import global land.land
 static import walls, dungeon, font, map, characters, render
-static import menu, title, controls, charsel, area, sound
+static import menu, title, controls, charsel, area, sound, music
 import game
 
 char background_color[80 * 25]
@@ -52,11 +52,13 @@ def tick():
         area_tick()
     
     menu_tick()
+    
+    music_tick()
 
 def draw():
     
     if strcmp(state, "title") == 0:
-        title_render(2)
+        title_render((land_get_ticks() / 15) % 2)
     elif strcmp(state, "game") == 0:
         game_render()
     elif strcmp(state, "charsel") == 0:

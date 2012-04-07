@@ -19,7 +19,7 @@ def area_tick():
         game_enter()
 
 def area_render():
-    title_render(1)
+    title_render(2)
     
     int n = (land_get_ticks() - start_tick) / 2
     

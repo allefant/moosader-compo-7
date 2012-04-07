@@ -1,14 +1,21 @@
 import main
-static import game, controls, charsel
+static import game, controls, charsel, item
 
 class Player:
     int id
     int x, y, d
-    int hp, ammo, xp
-    int level
+    int hp, max_hp
+    int ammo, max_ammo
+    int xp, level
     char name[20]
+    char letter
     
-    Player *next_in_party
+    int inventory[11]
+    int amount[11]
+    
+    int focus
+    
+    int next_in_party
 
 # Directions:
 #     0
@@ -19,11 +26,31 @@ class Player:
 static int const ddx[] = {0, 1, 0, -1}
 static int const ddy[] = {-1, 0, 1, 0}
 
+bool def player_add_item(Player *self, int iid):
+    for int i in range(11):
+        if self->inventory[i] == iid:
+            self->amount[i]++
+            return True
+    
+    for int i in range(11):
+        if not self->inventory[i]:
+            self->inventory[i] = iid
+            self->amount[i] = 1
+            return True
+    return False
+
 char def player_get_map_xy(Player *self, int x, y):
     return the_game->dungeon[y * 80 + x]
 
-char def player_get_monster_xy(Player *self, int x, y):
+int def player_get_monster_xy(Player *self, int x, y):
+    if y < 0 or x < 0 or y >= 25 or x >= 80: return 0
     return the_game->monstermap[y * 80 + x]
+
+def player_set_map_xy(Player *self, int x, y, char c):
+    the_game->dungeon[y * 80 + x] = c
+
+def player_set_monster_xy(Player *self, int x, y, int id):
+    the_game->monstermap[y * 80 + x] = id
 
 def player_get_map_forward_pos(Player *self, int offset, distance,
         int *x, *y):
@@ -40,16 +67,17 @@ char def player_get_map_forward(Player *self, int offset, distance):
     player_get_map_forward_pos(self, offset, distance, &x, &y)
     return player_get_map_xy(self, x, y)
 
-char def player_get_monster_forward(Player *self, int offset, distance):
+int def player_get_monster_forward(Player *self, int offset, distance):
     int x, y
     player_get_map_forward_pos(self, offset, distance, &x, &y)
     return player_get_monster_xy(self, x, y)
 
-Player *def player_new(int id, x, y, char const *name):
+Player *def player_new(int id, x, y, char letter, char const *name):
     Player *self; land_alloc(self)
     
     memcpy(self->name, name, 20)
 
+    self->letter = letter
     self->id = id
     self->x = x
     self->y = y
@@ -110,8 +138,29 @@ def player_input(Player *self, int bits):
             if self->d >= 4: self->d -= 4
 
     if move_x or move_y:
-        char c = player_get_map_xy(self, self->x + move_x, self->y + move_y)
-        if c == ' ':
+        int tx = self->x + move_x, ty = self->y + move_y
+        int m = player_get_monster_xy(self, tx, ty)
+
+        char cw = player_get_map_xy(self, tx, ty)
+
+        if m == 0 and cw != ' ':
+            # check for item to pick up
+            for int i in range(1, 256):
+                if not items[i].letter: break
+                if items[i].letter == cw:
+                    if player_add_item(self, i):
+                        player_set_map_xy(self, tx, ty, ' ')
+                    cw = ' '
+            
+        if m == 0 and cw == ' ':
+            player_set_monster_xy(self, self->x, self->y, 0)
             self->x += move_x
             self->y += move_y
+            player_set_monster_xy(self, self->x, self->y, self->id)
 
+    self->focus = 0
+    for int i in range(4):
+        int m = player_get_monster_forward(self, 0, 1 + i)
+        if m:
+            self->focus = m
+            break
