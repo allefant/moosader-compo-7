@@ -164,3 +164,12 @@ def player_input(Player *self, int bits):
         if m:
             self->focus = m
             break
+
+    if bits & (1 << Interact):
+        if self->focus:
+            Reply *r = &the_game->reply
+            r->text[0] = 0
+            r->choice = 0
+            for int i in range(4): r->choices[i][0] = 0
+            dialogue_talk(self->focus, r)
+            the_game->state = "dialogue"

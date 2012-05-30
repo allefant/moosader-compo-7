@@ -22,6 +22,7 @@ class ABCParser:
     char const *tune
     int pos
     int repeat_start_pos
+    int repeat_end_pos
     bool repeating
     
     int ticks64
@@ -52,7 +53,7 @@ T: Allefant Song
 M: 2/4
 L: 1/8
 K: Am
-|: "Am"A2^A2B2 "F" c3d1c4z2 | "Am"A2^A2B2 "F" c3d1c4z2 | "F" f2c2A2F2 "C"  F2E1G3z2 | "C" ^A2G2G2 "F" E1 F7z2 :|
+|: "Am" A2 ^A2 B2 "F" c3d1c4z2 | "Am"A2^A2B2 "F" c3d1c4z2 | "F" f2c2A2F2 "C"  F2E1G3z2 | "C" ^A2G2G2 "F" E1 F7z2 :|
 |: "C" E2 G2 c1 "F" x1 B4 A2 F2 z2 | "Bdim" D2F2B2 "C" A4G2E2 z2 :|
 """
 
@@ -75,11 +76,38 @@ K: Dm
 |: "Dm"A2 "B"d2 | "F"c2 "D7"dc | "Gm"BB AG | "Dm"A2 D2 | "Gm"zB2 G | "Dm"A3 F | "A7"EA, FE | "Dm"D4 :|
 """
 
+global char const *music_tune3 = """
+X:10
+T:Baron O' Brackley, The
+M:3/4
+L:1/8
+Q:1/4=100
+K:C
+D2|"Dm"D2 F3E|"Dm"D3C D2|"F"F2 G2 A2|"C"GG- G4|z4 A2|\
+"Dm"Ad3 c2|"F"c2 A2 G2|"F"F3D C2|"Dm"DD3 A-c|
+"Dm"dd3 e2|"dm"d2 c2 e2|"F"d2 A3F|"C"G6|z4 A2|\
+"Dm"A2 d3c|"F"c2 A2 G2|"F"F3D C2|"Dm"D6||
+"""
+
+global char const *music_tune4 = """
+X: 1
+T: the Drunken Sailor
+M: C|
+L: 1/8
+K: Ddor
+[| "Dm"A2AA A2AA | A2D2 F2A2 | "C"G2GG G2GG | G2C2 E2G2 \
+|  "Dm"A2AA A2AA | A2B2 c2d2 | "Am"c2A2 G2E2 | "Dm"D4 D4 |]
+[| "Dm"A4 A4 | A2D2 F2A2 | "C"G4 G4 | G2C2 E2G2 \
+|  "Dm"A4 A4 | A2B2 c2c2 | "Am"c2A2 G2E2 | "Dm"D4 D4 |]
+"""
+
 static LandStream *stream
 
-static int const notevals[2][7] = {
-    {0, 2, 4, 5, 7, 9, 11},
-    {0, 2, 3, 5, 7, 8, 10}}
+static int const notevals[3][7] = {
+    {0, 2, 4, 5, 7, 9, 11}, # major
+    {0, 2, 3, 5, 7, 8, 10}, # minor
+    {0, 2, 3, 5, 7, 9, 10}, # dorian
+    }
 
 int def noteval(int key, int scale, int note):
     """
@@ -87,6 +115,7 @@ int def noteval(int key, int scale, int note):
     note: 0..6
     scale: 0: major
            1: minor
+           2: dorian
     """
 
     int table[8]
@@ -233,6 +262,11 @@ static def parse_note(ABCParser *abc):
         elif c == 'z':
             if note: abc->pos--; break
             note = 128
+        elif c == '(':
+            if note: abc->pos--; break
+            if next_c >= '0' and next_c <= '9':
+                abc->pos++
+                # TODO: triplet
         elif c == 'x':
             if note: abc->pos--; break
             note = 128
@@ -254,17 +288,24 @@ static def parse_note(ABCParser *abc):
         elif c == '/':
             divide = True
         elif c == '|':
+            if note: abc->pos--; break
             if next_c == ':':
                 #printf("repeat start\n")
                 abc->pos++
                 abc->repeat_start_pos = abc->pos
+            elif next_c >= '0' and next_c <= '9':
+                abc->pos++
+                if next_c == '1':
+                    if abc->repeating:
+                        abc->repeating = False
+                        abc->pos = abc->repeat_end_pos
         elif c == ':':
             if next_c == '|':
                 if abc->repeating:
-                    abc->pos++
                     abc->repeating = False
                 else:
                     #printf("repeating\n")
+                    abc->repeat_end_pos = abc->pos
                     abc->pos = abc->repeat_start_pos
                     abc->repeating = True
     
@@ -273,7 +314,7 @@ static def parse_note(ABCParser *abc):
     int ticks = abc->ticks64 * 64 * abc->note_numerator * duration
     ticks /= divisor * abc->note_denominator
     
-    if note < 128:
+    if note > 0 and note < 128:
         note += octave * 12 + half
         
         #char s[100]
@@ -369,11 +410,17 @@ def music_parse_abc(char const *tune, NotesPlayer *player):
                     abc->key_scale = 0
                     #printf("K:%s\n", line)
                     #timestamp = timestamp_end
+                    bool got_note = False
                     for int i in range(s):
-                        if line[i] >= 'A' and line[i] <= 'G':
-                            abc->key_note = letter_to_note(line[i])
-                        if line[i] == 'm':
-                            abc->key_scale = 1
+                        if not got_note:
+                            if line[i] >= 'A' and line[i] <= 'G':
+                                abc->key_note = letter_to_note(line[i])
+                                got_note = True
+                        else:
+                            if line[i] == 'm':
+                                abc->key_scale = 1
+                            elif line[i] == 'd':
+                                abc->key_scale = 2
                 elif tag == 'L':
                     read_fraction(line, &abc->note_numerator,
                         &abc->note_denominator)
@@ -395,7 +442,7 @@ int def timestamp_to_samples(int ticks):
 int def mix_note(NotesPlayer *player, Envelope *e, Note *note, int16_t *b, int count):
     
     if not samples[note->note][note->ticks / 750]:
-        e->hold = note->ticks / 750 / 64.0 - e->attack - e->decay
+        e->hold = note->ticks / 750 / 64.0 - e->attack - e->decay - e->release
         samples[note->note][note->ticks / 750] = sound_synthesize(e, note->note)
         
     LandSound *sample = samples[note->note][note->ticks / 750]
@@ -431,7 +478,9 @@ int def mix_note(NotesPlayer *player, Envelope *e, Note *note, int16_t *b, int c
         mix(b[i * 2 + 1], s[i * 2 + 1])
     
     return 0
-    
+
+static int start = 0
+
 def music_play_tune(char const *tune):
     NotesPlayer *player = &global_player
     
@@ -442,6 +491,8 @@ def music_play_tune(char const *tune):
     current_tune = tune
     player->oldest_active_note = player->first_note
     player->sample_pos = 0
+    
+    start = land_get_ticks()
 
 def music_tick():
 
@@ -449,13 +500,15 @@ def music_tick():
     
     if not current_tune: return
     
+    int fragment_samples = 2048
+    
     if not stream:
-        stream = land_stream_new(8192, 4, 48000, 16, 2)
+        stream = land_stream_new(fragment_samples, 4, 48000, 16, 2)
 
     int16_t *b = land_stream_buffer(stream)
     if not b: return
 
-    memset(b, 0, 8192 * 4)
+    memset(b, 0, fragment_samples * 4)
     #for int i in range(4096):
     #    int c = sin(((sample_pos + i) / 48000.0) * 440.0 * LAND_PI * 2) * 32767
     #    b[i * 2 + 0] = c / 2
@@ -464,6 +517,7 @@ def music_tick():
     if not player->oldest_active_note:
         player->oldest_active_note = player->first_note
         player->sample_pos = 0
+        start = land_get_ticks()
 
     Envelope e = {
         .attack = 0.025,
@@ -477,18 +531,23 @@ def music_tick():
     while True:            
         Note *n = player->notes + ni
         if n->note > 0 and n->note < 128:
-            int r = mix_note(player, &e, n, b, 8192)
+            int r = mix_note(player, &e, n, b, fragment_samples)
             if r == 1: break
             if r == -1 and ni == player->oldest_active_note:
                 player->oldest_active_note = n->next_index
         ni = n->next_index
+        #printf("%d %d (%d:%d)\n", ni, player->oldest_active_note,
+        #    player->notes[player->oldest_active_note].note,
+        #    player->notes[player->oldest_active_note].ticks)
         if not ni:
-            
             break
         n = player->notes + ni
 
 
     land_stream_fill(stream)
 
-    player->sample_pos += 8192
+    player->sample_pos += fragment_samples
     
+int def music_ticks():
+    if not current_tune: return 0
+    return land_get_ticks() - start

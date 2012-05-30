@@ -19,7 +19,7 @@
 import global land.land
 static import walls, dungeon, font, map, characters, render
 static import menu, title, controls, charsel, area, sound, music
-import game
+import dialogue, game
 
 char background_color[80 * 25]
 char foreground_color[80 * 25]
@@ -55,10 +55,36 @@ def tick():
     
     music_tick()
 
+static char const *lyrics[] = {
+    "I", "am", "the", "Al", "le", "fant", "!", "",
+    "I", "roam", "through", "out", "the", "land", "!", "",
+    "Look", "ing", "for", "the", "food", "I", "want", "",
+    "Sing", "ing", "all", "the", "way", "...", "...", "...",
+    "I", "am", "the", "Al", "le", "fant", "!", "",
+    "I", "roam", "through", "out", "the", "land", "!", "",
+    "Where", "have", "my", "ba", "na", "nas", "gone", "?",
+    "No", "where", "to", "be", "found", ":(", ":(", ":(",
+    "And", "so", "my", "sto", "mach", "growls", "", "",
+    "Won't", "eat", "no", "o", "ther", "food", "", "",
+    "Find", "no", "ba", "na", "na", "tree", "", "",
+    "Oh", "no", "how", "can", "this", "be", ":(", "",
+    }
+
 def draw():
     
     if strcmp(state, "title") == 0:
-        title_render((land_get_ticks() / 15) % 2)
+        
+        title_render((music_ticks() / 15) % 2)
+        
+        int word = (music_ticks() / 30)
+        char s[256] = ""
+        for int i in range(word - 1, word + 1):
+            if i >= 0 and i < 12 * 8:
+                strcat(s, " ")
+                strcat(s, lyrics[i])
+        int l = strlen(s)
+        text((80 - l) / 2 - 2, 2, s)
+        
     elif strcmp(state, "game") == 0:
         game_render()
     elif strcmp(state, "charsel") == 0:

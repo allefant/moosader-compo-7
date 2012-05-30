@@ -12,6 +12,8 @@ enum ControllerFlags:
     TurnMoveWest
     TurnMoveEast
     StrafeModifier
+    
+    Interact
 
     ControllerFlagsCount
 
@@ -57,6 +59,9 @@ def controls_init():
     newkeymod(StrafeModifier, LandKeyRightShift)
     newkeymod(StrafeModifier, LandKeyLeftAlt)
     newkeymod(StrafeModifier, LandKeyRightAlt)
+    
+    newkey(Interact, LandKeyEnter)
+    newkey(Interact, ' ')
 
 int def controls_get_keymap():
     int keymap = 0

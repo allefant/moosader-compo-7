@@ -68,6 +68,13 @@ static def select_next(int part, d):
             break
     charsel_portrait[part] = sel
 
+int def charsel_get_part(char const *name):
+    for int i in range(characters_count):
+        int n = strlen(name)
+        if memcmp(portraits[i] + 12 * 20, name, n) == 0:
+            return i
+    return 0
+
 static def com_select(Menu *menu, char const *command):
     int d = 0
 
@@ -184,6 +191,15 @@ def charsel_tick():
         title_enter()
         return
 
+def charsel_draw_portrait(int px, py, int *portrait):
+    for int p in range(5):
+        for int j in range(12):
+            for int i in range(20):
+                char c = portraits[portrait[p]][i + j * 20]
+                if p == 0 or c != ' ':
+                    if c == 'e': c = ' '
+                    screen[px + i + (py + j) * 80] = c
+
 def charsel_render():
     memset(screen, 0, 80 * 25)
 
@@ -198,13 +214,7 @@ def charsel_render():
     
     int px = x + 1
     int py = y + 2
-    for int p in range(5):
-        for int j in range(12):
-            for int i in range(20):
-                char c = portraits[charsel_portrait[p]][i + j * 20]
-                if p == 0 or c != ' ':
-                    if c == 'e': c = ' '
-                    screen[px + i + (py + j) * 80] = c
+    charsel_draw_portrait(px, py, charsel_portrait)
 
     #memcpy(screen + 1 + 14 * 80, portraits[charsel_portrait[part_sel]] + 12 * 20, 20)
     text(1, 24, get_help(menu_get_focus()))
@@ -256,3 +266,6 @@ def charsel_render():
 
 char const *def charsel_name():
     return char_name
+
+char const *def charsel_profession():
+    return jobs[profession]

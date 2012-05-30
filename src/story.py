@@ -15,19 +15,23 @@ Assemble a team, go to
 Antarctica and defeat
 their leader.
 
+Controls:
+- WASD and QE or Cursor
+  keys and shift to
+  walk/turn   
+- Return to interact
 
-
-
-
-
+    press Return now
 
 """
 
 def story_render(char const *text):
     int x = 27
     int y = 1
-    char const *pos = text + 1
-    for int i in range(20):
+    char const *pos = text
+    if *pos: pos++
+    memcpy(screen + x + 0 * 80, "                          ", 26)
+    for int i in range(24):
         int j = 0
         while *pos and *pos != '\n':
             screen[y * 80 + x] = *pos
@@ -38,10 +42,11 @@ def story_render(char const *text):
             screen[y * 80 + x] = ' '
             x++
             j++
-        if not *pos: break
-        pos++
+        if *pos: pos++
         y++
         x = 27
+    x = 27
+    memcpy(screen + x + 24 * 80, "                          ", 26)
 
 ***scramble
 story = """
@@ -88,7 +93,7 @@ quotes
 CIA Agent: "Hi there, FBI! Forgot we have no clearance here have we?"
 
 Assistant Director: "It's gotten dark. Avoid walking through Arlington because
-of teh Zombies."
+of the Zombies."
 
 ___
 Canada, April 2nd 2045

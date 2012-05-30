@@ -180,6 +180,7 @@ def draw_walls(int wx, wy):
     draw_wall(wx + 0, wy + 0, 0, 0, 0)
 
 def game_render():
+    
     Player *player = the_game->monsters[the_game->player_id]
 
     int wx = 40 - 13, wy = 0
@@ -233,32 +234,42 @@ def game_render():
     rectfill(60, 1, 60 + 18, 1 + 10, 127)
     map_draw(60, 1, 19, 11)
     
-    rect(0, 0, 26, 24)
-    for int i in range(1):
-        hline(1, i * 5, 25)
-        text(1, i * 5, player->name)
-        text(1, i * 5 + 1, "                     L %2d", player->level)
-        text(1, i * 5 + 2, "HP %3d/%3d Ammo %3d/%3d", player->hp,
-            player->max_hp, player->ammo, player->max_ammo)
-        text(1, i * 5 + 3, "XP %3d", player->xp)
-    
     rect(59, 12, 79, 24)
     
     if player->focus:
         Player *focus = the_game->monsters[player->focus]
-        text(60, 12, "%s", focus->name)
-        text(60, 13, "HP %3d/%3d     L %2d", focus->hp, focus->max_hp,
+        text(60, 13, "%s", focus->name)
+        text(60, 14, "HP %3d/%3d     L %2d", focus->hp, focus->max_hp,
             focus->level)
     else:
-        text(60, 12, "Inventory")
-        for int i in range(11):
+        text(60, 13, "Inventory")
+        for int i in range(10):
             int iid = player->inventory[i]
             if iid:                
-                text(61, 13 + i, "%s (%d)", items[iid].name,
+                text(61, 14 + i, "%s (%d)", items[iid].name,
                     player->amount[i])
             else:
-                text(61, 13 + i, "-")
+                text(61, 14 + i, "-")
     
     rect(53, 0, 58, 24)
     
-    #story_render(story)
+    bool draw_party = True
+    
+    if strcmp(the_game->state, "new") == 0:
+        story_render(story)
+        draw_party = False
+    
+    
+    if strcmp(the_game->state, "dialogue") == 0:
+        dialogue_render(&the_game->reply)
+        draw_party = False
+        
+    if draw_party:
+        rect(0, 0, 26, 24)
+        for int i in range(1):
+            hline(1, i * 5, 25)
+            text(1, i * 5, player->name)
+            text(1, i * 5 + 1, "                     L %2d", player->level)
+            text(1, i * 5 + 2, "HP %3d/%3d Ammo %3d/%3d", player->hp,
+                player->max_hp, player->ammo, player->max_ammo)
+            text(1, i * 5 + 3, "XP %3d", player->xp)
